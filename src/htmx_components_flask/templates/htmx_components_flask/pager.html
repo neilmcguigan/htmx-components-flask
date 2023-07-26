@@ -1,0 +1,16 @@
+{% set args = request.args.copy() %}
+{% set prev = [1, page - 1] | max %}
+{% set next = [total_pages, page + 1] | min %}
+
+<nav>
+  <ul class="pagination pagination-sm mb-0">
+    {% set _ = args.setlist(PAGE_PARAM, [1])%}
+    <li class="page-item {{'disabled' if page <= 1}}"><a  title="First" class="page-link" href="?{{args|url_encode}}"><i class="bi-skip-start"></i></a></li>
+    {% set _ = args.setlist(PAGE_PARAM, [prev])%}    
+    <li class="page-item {{'disabled' if page <= 1}}"><a title="Previous" class="page-link" href="?{{args|url_encode}}"><i class="bi-caret-left"></i></a></li>
+    {% set _ = args.setlist(PAGE_PARAM, [next])%}    
+    <li class="page-item {{'disabled' if page >= total_pages}}"><a title="Next" class="page-link" href="?{{args|url_encode}}"><i class="bi-caret-right"></i></a></li>
+    {% set _ = args.setlist(PAGE_PARAM, [total_pages])%}    
+    <li class="page-item {{'disabled' if page >= total_pages}}"><a title="Last" class="page-link" href="?{{args|url_encode}}"><i class="bi-skip-end"></i></a></li>
+  </ul>
+</nav>

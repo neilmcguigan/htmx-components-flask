@@ -1,0 +1,80 @@
+{# constants #}
+{% set prefix = grid_config.prefix %}
+{% set TABLE_ID = prefix~"viewgrid" %}
+{% set PAGE_PARAM = prefix~"page" %}
+{% set SEARCH_PARAM = prefix~"q" %}
+{% set SORT_PARAM = prefix~"sort" %}
+{% set SPINNER_ID = prefix~"spinner"%}
+
+
+{# state #}
+{% set q = request.args.get(SEARCH_PARAM, "") %}
+{% set page = request.args.get(PAGE_PARAM, 1)|int%}
+{% set sorts = request.args.getlist(SORT_PARAM)|map("partition", "asc")|list%}
+{% set records, total_pages = grid_config.get_records(page=page, sorts=sorts, q=q) %}
+{% set columns = grid_config.columns %}
+
+{% set search_args = request.args.copy() %}
+{% set _ = search_args.pop(SEARCH_PARAM,None) %}
+{% set _ = search_args.pop(PAGE_PARAM,None) %}
+
+<form action="{{request.full_path}}" method="get" id="{{prefix}}search">
+    <noscript>
+        <button hidden name="enter"></button>
+    </noscript>
+</form>
+
+<div class="btn-toolbar justify-content-between"  hx-indicator="#{{SPINNER_ID}}">
+    <div>
+        <div class="btn-group btn-group-sm">
+            <a hx-get hx-target="#{{TABLE_ID}}" href="?{{request.args|url_encode}}" title="Refresh" class="btn btn-outline-secondary" ><i
+                    class="bi-arrow-clockwise"></i></a>
+        </div>
+        <div id="{{SPINNER_ID}}" class="ms-2 mt-2 htmx-indicator spinner-border spinner-border-sm text-secondary"></div>
+    </div>
+    <div class="input-group input-group-sm">
+        <input hx-target="#{{TABLE_ID}}" hx-push-url="true" hx-get="?{{search_args|url_encode}}"
+            hx-trigger="keyup delay:500ms, search" form="{{prefix}}search" type="search" name="{{SEARCH_PARAM}}"
+            id="{{SEARCH_PARAM}}" value="{{q}}" class="form-control">
+
+        <span class="input-group-text"
+            title='Examples:&#10;foo&#10;foo*&#10;foo AND bar&#10;foo OR bar&#10;"foo bar"&#10;`ColumnName`:foo'><i
+                class="bi-info-circle"></i></span>
+    </div>
+</div>
+
+<table hx-swap="outerHTML" hx-target="this" id="{{TABLE_ID}}" class="table table-sm {{grid_config.table_cls}}"
+    hx-boost="true" hx-indicator="#{{SPINNER_ID}}">
+    <colgroup>
+        {% for column in columns %}
+        <col width="{{100//(columns|length)}}%">
+        {% endfor %}
+    </colgroup>
+    <thead>
+        <tr>
+            {% for column in columns %}
+            <td>{% include "htmx_components_flask/sortlink.html" %}</td>
+            {% endfor %}
+        </tr>
+    </thead>
+    <tbody>
+        {% for record in records %}
+        <tr>
+            {% for column in columns %}
+            <td>{{column.render(record[column.attr])}}</td>
+            {% endfor %}
+        </tr>
+        {% endfor %}
+    </tbody>
+    <tfoot>
+        <tr>
+            <td colspan="100%">
+                <div class="d-flex justify-content-between">
+                    <span class="text-secondary">Page {{page}} of {{total_pages}}</span>
+                    {% include "htmx_components_flask/pager.html" %}
+                </div>
+            </td>
+        </tr>
+    </tfoot>
+
+</table>

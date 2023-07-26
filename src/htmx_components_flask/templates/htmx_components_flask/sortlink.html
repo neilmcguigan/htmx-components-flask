@@ -1,0 +1,8 @@
+{% set args = request.args.copy() %}
+{% set sort_attr, _, dir = args.get(SORT_PARAM, "").partition(",") %}
+{% set dir = "desc" if sort_attr == column.attr and dir in ["asc",""] else "asc" %}
+{% set _ = args.setlist(SORT_PARAM, [column.attr~','~dir])%}
+
+<a href="?{{args|url_encode}}">{{column.text}}</a>
+
+{% set sorts = request.args.getlist("sort")|map("partition","asc")|list %}

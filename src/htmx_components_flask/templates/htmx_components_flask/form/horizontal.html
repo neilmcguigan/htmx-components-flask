@@ -1,0 +1,71 @@
+{% set encoding = "multipart/form-data" if form.__iter__() | selectattr("type", "in", ["FileField","MultipleFileField"]) | list else "application/x-www-form-urlencoded" %}
+
+<form method="post" id="{{form._prefix}}form" hx-post novalidate hx-indicator="#spinner" encoding="{{encoding}}">
+
+    {% if form.form_errors %}
+    <div class="alert alert-danger" role="alert"><ul>
+    {% for error in form.form_errors %}
+    <li>{{error}}</li>
+    {% endfor %}
+    </ul></div>
+    {% endif %}
+
+    {% for field in form %}
+
+    {% set valid_css = " is-invalid" if field.errors else " is-valid" if field.raw_data != [] else ""%}
+
+    {% if field.type == "SubmitField"%}
+
+    {{field(class="btn btn-sm btn-success")}}
+    <span id="spinner" class="htmx-indicator spinner-border spinner-border-sm text-secondary"></span>
+
+    {% elif field.type in ["CSRFTokenField","HiddenField"]%}
+
+    {{field()}}
+
+    {% elif field.type == "BooleanField"%}
+
+    <div class="form-check mb-3" id="{{field.id}}-container">
+        {{field(class="form-check-input"~valid_css, **{"hx-post":True, "hx-target":"closest div"})}}
+        {{field.label(class="form-check-label")}}
+        {% include "htmx_components_flask/form/errors.html"%}
+        {% include "htmx_components_flask/form/description.html"%}
+    </div>
+
+    {% elif field.type == "RadioField"%}
+
+    <fieldset id="{{field.id}}-container">
+        {{field.label(class="form-label")}}
+        {% for subfield in field %}
+        <div class="form-check">
+            {{subfield(class="form-check-input"~valid_css, **{"hx-post":True, "hx-target":"closest fieldset"})}}
+            {{subfield.label(class="form-check-label")}}
+            {% if loop.last %}
+            {% include "htmx_components_flask/form/errors.html"%}
+            {% include "htmx_components_flask/form/description.html"%}
+            {% endif %}
+        </div>
+        {% endfor%}
+    </fieldset>
+    {% else %}
+
+    <div class="mb-3" id="{{field.id}}-container">
+        {{field.label(class="form-label")}}
+
+        {% if field.type in ["SelectField", "SelectMultipleField"]%}
+        {% set css = "form-select"%}
+        {% elif field.type in ["IntegerRangeField", "DecimalRangeField"]%}
+        {% set css = "form-range"%}
+        {% elif field.type == "ColorField"%}
+        {% set css = "form-control form-control-color"%}
+        {% else %}
+        {% set css = "form-control"%}
+        {% endif %}
+        {{field(**{"class":css~valid_css, "hx-target":"closest div", "hx-post":true})}}
+
+        {% include "htmx_components_flask/form/errors.html"%}
+        {% include "htmx_components_flask/form/description.html"%}
+    </div>
+    {% endif %}
+    {% endfor %}
+</form>

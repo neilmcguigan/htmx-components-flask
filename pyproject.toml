@@ -1,0 +1,18 @@
+[project]
+name = "htmx-components-flask"
+authors = [
+    {name = "Neil McGuigan"},
+]
+version = "0.0.1"
+description = "HTMX Components for Flask"
+readme = "README.md"
+classifiers = []
+dependencies = [
+    "flask==2.3.2", "lxml==4.9.3"
+]
+
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+

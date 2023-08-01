@@ -7,6 +7,11 @@ htmx_components_flask = Blueprint(
 )
 
 
+@htmx_components_flask.app_context_processor
+def jinja_globals():
+    return dict(int=int)
+
+
 @htmx_components_flask.app_template_filter("url_encode")
 def url_encode(s: str) -> str:
     return werkzeug.urls.url_encode(s)

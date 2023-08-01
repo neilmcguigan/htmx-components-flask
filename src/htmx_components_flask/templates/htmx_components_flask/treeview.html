@@ -1,0 +1,69 @@
+{% set prefix = tree.prefix %}
+{% set SEARCH_PARAM = prefix~"q" %}
+{% set EXPAND_PARAM = prefix~"x" %}
+
+{% set q = request.args.get(SEARCH_PARAM, "")|trim %}
+
+{% if tree.data is callable %}
+{% set data = tree.data(q)%}
+{% else %}
+{% set data = tree.data %}
+{% endif %}
+
+{% if request.args.get(EXPAND_PARAM) == "*" %}
+    {% set expand = data|map(attribute=tree.key_attr)|list%}
+{% else %}
+    {%- set expand = request.args.getlist(EXPAND_PARAM, type=int)|list -%}
+{% endif %}
+
+<div id="{{prefix}}treeview-container" class="border p-1">
+
+    {% if tree.search %}
+    <form method="get">
+        <input placeholder="Search" type="search" name="{{SEARCH_PARAM}}" value="{{q}}" class="form-control form-control-sm">
+    </form>
+    {% endif %}
+    
+    <ul class="position-relative mt-1" style="min-height:15px; list-style-type:none">
+
+        {% if tree.toggle_all %}
+            <div id="{{prefix}}toggle" class="position-absolute top-0 end-0">
+               {% if expand|length %}
+                <a hx-get="?{{EXPAND_PARAM}}=" hx-target="#{{prefix}}treeview-container" href="?{{EXPAND_PARAM}}=" class="btn btn-sm btn-outline-secondary bi-arrows-collapse" title="Collapse All"></a>
+                {% else %}
+                <a hx-get="?{{EXPAND_PARAM}}=*" hx-target="#{{prefix}}treeview-container" href="?{{EXPAND_PARAM}}=*" class="btn btn-sm btn-outline-secondary bi-arrows-expand" title="Expand All"></a>
+                {% endif %}
+            </div>
+        {% endif %}        
+
+        {% for item in data|rejectattr(tree.parent_id_attr) recursive %}
+            {% set id = item[tree.key_attr] %}
+            {% set children = data|selectattr(tree.parent_id_attr, "eq", id)|list%}
+
+            <div id="{{prefix}}node-container-{{id}}">
+                <li>
+                {% if children %}
+
+                    {%- set result = expand.copy() -%}
+                    {%- if id in result -%}
+                        {%- set _ = result.remove(id)-%}
+                    {%- else -%}
+                        {%- set _ = result.append(id)-%}
+                    {%- endif -%}        
+
+                    {%- set args = request.args.copy() -%}
+                    {%- set _ = args.setlist(EXPAND_PARAM, result)-%}
+
+                <a hx-get="?{{args|url_encode}}" hx-target="#{{prefix}}node-container-{{id}}" href="?{{args|url_encode}}" class="{{tree.collapse_icon if id in expand else tree.expand_icon}}"></a>
+                {% endif %}
+                {{tree.render_node(item)}}
+                </li>            
+
+
+                {% if q or expand == "*" or id in expand %}
+                    <ul style="list-style-type:none">{{loop(children)}}</ul>
+                {% endif %}
+            </div>
+        {% endfor %}
+    </ul>
+</div>
